@@ -1,0 +1,150 @@
+from PyPDF2 import PdfFileReader
+import os
+
+try:
+   os.makedirs('Output')
+except FileExistsError:
+   pass
+
+
+def getPDFContent(path):
+   p = open(path, "rb")
+   pdf = PdfFileReader(p)
+   num=1
+   for pageNum in range(pdf.numPages):
+
+       line_text = pdf.getPage(pageNum).extractText()
+      # print(type(line_text))
+
+       if "EXERCISES" in line_text or 'Exercises' in line_text:
+           indx = line_text.find('EXERCISES')
+           if indx == -1:
+               indx = line_text.find('Exercises')
+           lastques = line_text.rfind('?')
+           exerciseParagraph = line_text[indx+9:lastques+1]
+           exerciseParagraph = exerciseParagraph.replace('\n', '')
+           finalParagraph = exerciseParagraph.replace('?', '?\n')
+
+           if len(finalParagraph) == 0:
+               nextPageText = pdf.getPage(pageNum+1).extractText()
+               allText = line_text+'\n'+nextPageText
+               SearchFromNextPage(allText, pageNum, num)
+           else:
+               nextPageQues = ''
+               nextPageText = pdf.getPage(pageNum+1).extractText()
+               if nextPageText[0].isdigit() and nextPageText[1:5] == ".\n \n":
+                   findlastques = nextPageText.rfind('?')
+                   nextPageText = nextPageText[:findlastques+1]
+                   nextPageQues = nextPageText.replace('\n', '')
+                   nextPageQues = nextPageQues.replace('?', '?\n')
+               splitQuestions(finalParagraph+' '+nextPageQues, num)
+           num+=1
+
+       if "CHECK YOUR UNDERSTANDING" in line_text or 'Check Your Understanding' in line_text:
+           indx = line_text.find('CHECK YOUR UNDERSTANDING')
+           if indx == -1:
+               indx = line_text.find('Check Your Understanding')
+           lastques = line_text.rfind('?')
+           exerciseParagraph = line_text[indx + 19:lastques + 1]
+           exerciseParagraph = exerciseParagraph.replace('\n', '')
+           finalParagraph = exerciseParagraph.replace('?', '?\n')
+
+           if len(finalParagraph) == 0:
+               nextPageText = pdf.getPage(pageNum + 1).extractText()
+               allText = line_text + '\n' + nextPageText
+               SearchFromNextPage(allText, pageNum, num)
+           else:
+               nextPageQues = ''
+               nextPageText = pdf.getPage(pageNum + 1).extractText()
+               if nextPageText[0].isdigit() and nextPageText[1:5] == ".\n \n":
+                   findlastques = nextPageText.rfind('?')
+                   nextPageText = nextPageText[:findlastques + 1]
+                   nextPageQues = nextPageText.replace('\n', '')
+                   nextPageQues = nextPageQues.replace('?', '?\n')
+               splitQuestions(finalParagraph + ' ' + nextPageQues, num)
+           num+=1
+
+       if "QUESTIONS" in line_text or 'Questions' in line_text:
+           indx = line_text.find('QUESTIONS')
+           if indx == -1:
+               indx = line_text.find('Questions')
+           lastques = line_text.rfind('?')
+           exerciseParagraph = line_text[indx + 9:lastques + 1]
+           exerciseParagraph = exerciseParagraph.replace('\n', '')
+           finalParagraph = exerciseParagraph.replace('?', '?\n')
+
+           if len(finalParagraph) == 0:
+               nextPageText = pdf.getPage(pageNum + 1).extractText()
+               allText = line_text + '\n' + nextPageText
+               SearchFromNextPage(allText, pageNum, num)
+           else:
+               nextPageQues = ''
+               nextPageText = pdf.getPage(pageNum + 1).extractText()
+               if nextPageText[0].isdigit() and nextPageText[1:5] == ".\n \n":
+                   findlastques = nextPageText.rfind('?')
+                   nextPageText = nextPageText[:findlastques + 1]
+                   nextPageQues = nextPageText.replace('\n', '')
+                   nextPageQues = nextPageQues.replace('?', '?\n')
+               splitQuestions(finalParagraph + ' ' + nextPageQues, num)
+           num+=1
+   p.close()
+
+def SearchFromNextPage(allText,pageNum, num):
+   if "EXERCISES" in allText or 'Exercises' in allText:
+       indx = allText.find('EXERCISES')
+       if indx == -1:
+           indx = allText.find('Exercise')
+       lastques = allText.rfind('?')
+       exerciseParagraph = allText[indx+9:lastques+1]
+       exerciseParagraph = exerciseParagraph.replace('\n', '')
+       finalParagraph = exerciseParagraph.replace('?', '?\n')
+       splitQuestions(finalParagraph, num)
+
+   if "CHECK YOUR UNDERSTANDING" in allText or 'Check Your Understanding' in allText:
+       indx = allText.find('CHECK YOUR UNDERSTANDING')
+       if indx == -1:
+           indx = allText.find('Check Your Understanding')
+       lastques = allText.rfind('?')
+       exerciseParagraph = allText[indx+9:lastques+1]
+       exerciseParagraph = exerciseParagraph.replace('\n', '')
+       finalParagraph = exerciseParagraph.replace('?', '?\n')
+       splitQuestions(finalParagraph, num)
+
+   if "QUESTIONS" in allText or 'Questions' in allText:
+       indx = allText.find('QUESTIONS')
+       if indx == -1:
+           indx = allText.find('Questions')
+       lastques = allText.rfind('?')
+       exerciseParagraph = allText[indx+9:lastques+1]
+       exerciseParagraph = exerciseParagraph.replace('\n', '')
+       finalParagraph = exerciseParagraph.replace('?', '?\n')
+       splitQuestions(finalParagraph, num)
+
+def splitQuestions(finalParagraph, num):
+   findPoints = [i for i in range(len(finalParagraph)) if finalParagraph.startswith('?', i) or finalParagraph.startswith('.', i)]
+   breakpoints = [0]
+   for j in findPoints:
+       try:
+           if finalParagraph[j:j+2] == "?\n" and finalParagraph[j+3].isdigit():
+               breakpoints.append(j+1)
+           if finalParagraph[j:j+2] == '. ' and finalParagraph[j+2].isdigit():
+               breakpoints.append(j+1)
+       except IndexError:
+           breakpoints.append(j+1)
+   for i in range(len(breakpoints)):
+       try:
+           quesNum = i+1
+           eachQues = finalParagraph[breakpoints[i]:breakpoints[i+1]]
+           GenerateText(eachQues, num, quesNum)
+       except:
+           pass
+
+def GenerateText(exerciseQuestion, num, quesNum):
+   print("Creating Text file as: Exercise-{}_Ques-{}.txt".format(num, quesNum))
+   with open("Output/Exercise-"+str(num)+"_Ques-"+str(quesNum)+".txt", "w") as myfile:
+       myfile.write(exerciseQuestion)
+       
+#put the directory of the pdf  to be extracted
+getPDFContent("")
+
+
